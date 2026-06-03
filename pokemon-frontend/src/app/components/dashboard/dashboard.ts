@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -40,7 +40,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private pokemonService: PokemonService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.trainerName = this.authService.currentUser() || 'Trainer';
   }
@@ -55,10 +56,12 @@ export class DashboardComponent implements OnInit {
       next: (data) => {
         this.pokemons = data;
         this.applyFilters();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.apiDown = true;
         console.error('Failed to load pokemons', err);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -83,10 +86,12 @@ export class DashboardComponent implements OnInit {
         if (nextEmpty !== -1) {
           this.selectedSlotIndex = nextEmpty;
         }
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.dbOffline = true;
         console.error('Failed to load team', err);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -167,11 +172,13 @@ export class DashboardComponent implements OnInit {
       next: (details) => {
         this.selectedPokemon = details;
         this.detailsLoading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.detailsLoading = false;
         alert('Failed to retrieve Pokemon details.');
         this.showDetailsModal = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -188,11 +195,13 @@ export class DashboardComponent implements OnInit {
       next: (res) => {
         this.aiAnalysis = res;
         this.aiLoading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.aiLoading = false;
         alert('Failed to get AI Coach feedback.');
         this.showAiCoach = false;
+        this.cdr.markForCheck();
       }
     });
   }

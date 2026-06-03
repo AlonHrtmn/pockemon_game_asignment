@@ -16,7 +16,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5072/api/auth';
+  private apiUrl = 'http://localhost:5088/api/auth';
   
   // Use modern Angular Signals to track the logged-in user state reactively
   currentUser = signal<string | null>(localStorage.getItem('trainer_username'));

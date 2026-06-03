@@ -54,7 +54,7 @@ export interface AiCoachResponse {
   providedIn: 'root'
 })
 export class PokemonService {
-  private apiUrl = 'http://localhost:5072/api';
+  private apiUrl = 'http://localhost:5088/api';
 
   constructor(private http: HttpClient) {}
 

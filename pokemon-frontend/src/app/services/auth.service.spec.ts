@@ -41,7 +41,7 @@ describe('AuthService', () => {
       expect(service.currentUser()).toBe('ash_ketchum');
     });
 
-    const req = httpMock.expectOne('http://localhost:5072/api/auth/login');
+    const req = httpMock.expectOne('http://localhost:5088/api/auth/login');
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
   });
