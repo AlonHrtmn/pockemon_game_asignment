@@ -1,0 +1,89 @@
+<div class="auth-container">
+  <div class="glow-orb red"></div>
+  <div class="glow-orb blue"></div>
+
+  <div class="auth-card">
+    <div class="logo-container">
+      <div class="pokeball-icon-wrapper">
+        <div class="pokeball-icon">
+          <div class="pokeball-top"></div>
+          <div class="pokeball-center">
+            <div class="pokeball-button"></div>
+          </div>
+          <div class="pokeball-bottom"></div>
+        </div>
+      </div>
+      <h1>Trainer Portal</h1>
+      <p class="subtitle">Assemble your ultimate dream team</p>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="mode-tabs">
+      <button 
+        type="button" 
+        [class.active]="isLoginMode" 
+        (click)="isLoginMode = true"
+        [disabled]="isLoading">
+        Login
+      </button>
+      <button 
+        type="button" 
+        [class.active]="!isLoginMode" 
+        (click)="isLoginMode = false"
+        [disabled]="isLoading">
+        Register
+      </button>
+      <div class="tab-indicator" [style.left.%]="isLoginMode ? 0 : 50"></div>
+    </div>
+
+    <!-- Feedback Banners -->
+    <div class="alert error" *ngIf="errorMessage" id="auth-error">
+      <i class="icon-error">⚠</i> {{ errorMessage }}
+    </div>
+
+    <div class="alert success" *ngIf="successMessage" id="auth-success">
+      <i class="icon-success">✓</i> {{ successMessage }}
+    </div>
+
+    <!-- Auth Form -->
+    <form (ngSubmit)="onSubmit()" #authForm="ngForm" class="auth-form">
+      <div class="input-group">
+        <label for="username">Trainer Name</label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            [(ngModel)]="username" 
+            required 
+            placeholder="Enter trainer name..."
+            [disabled]="isLoading"
+            autocomplete="off" />
+          <span class="focus-line"></span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Access Code</label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            [(ngModel)]="password" 
+            required 
+            placeholder="Enter access code..."
+            [disabled]="isLoading" />
+          <span class="focus-line"></span>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading || !authForm.valid">
+        <span *ngIf="!isLoading">
+          {{ isLoginMode ? 'Enter Portal' : 'Create Account' }}
+        </span>
+        <div class="spinner" *ngIf="isLoading"></div>
+      </button>
+    </form>
+  </div>
+</div>

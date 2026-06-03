@@ -1,0 +1,209 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { PokemonService, PokemonListItem, PokemonDetails, DreamTeamMember, AiCoachResponse } from '../../services/pokemon.service';
+
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.css'
+})
+export class DashboardComponent implements OnInit {
+  trainerName = '';
+  pokemons: PokemonListItem[] = [];
+  filteredPokemons: PokemonListItem[] = [];
+  searchQuery = '';
+  selectedType = '';
+  
+  // Dream Team slots (index 0 to 4). Using an array of 5 elements to represent the slots.
+  teamSlots: (DreamTeamMember | null)[] = [null, null, null, null, null];
+  selectedSlotIndex = 0; // default slot to place next pokemon
+
+  // AI Coach drawer state
+  showAiCoach = false;
+  aiAnalysis: AiCoachResponse | null = null;
+  aiLoading = false;
+
+  // Pokemon details modal state
+  selectedPokemon: PokemonDetails | null = null;
+  detailsLoading = false;
+  showDetailsModal = false;
+
+  // DB Offline or API Down states
+  dbOffline = false;
+  apiDown = false;
+
+  constructor(
+    private authService: AuthService,
+    private pokemonService: PokemonService,
+    private router: Router
+  ) {
+    this.trainerName = this.authService.currentUser() || 'Trainer';
+  }
+
+  ngOnInit(): void {
+    this.loadPokemons();
+    this.loadTeam();
+  }
+
+  loadPokemons(): void {
+    this.pokemonService.getPokemons().subscribe({
+      next: (data) => {
+        this.pokemons = data;
+        this.applyFilters();
+      },
+      error: (err) => {
+        this.apiDown = true;
+        console.error('Failed to load pokemons', err);
+      }
+    });
+  }
+
+  loadTeam(): void {
+    this.pokemonService.getTeam().subscribe({
+      next: (data) => {
+        // Reset slots
+        this.teamSlots = [null, null, null, null, null];
+        
+        // Fill slots based on backend slotIndex
+        data.forEach(member => {
+          if (member.slotIndex >= 0 && member.slotIndex < 5) {
+            this.teamSlots[member.slotIndex] = member;
+          }
+        });
+        
+        this.dbOffline = false;
+
+        // Auto-select next empty slot
+        const nextEmpty = this.teamSlots.findIndex(s => s === null);
+        if (nextEmpty !== -1) {
+          this.selectedSlotIndex = nextEmpty;
+        }
+      },
+      error: (err) => {
+        this.dbOffline = true;
+        console.error('Failed to load team', err);
+      }
+    });
+  }
+
+  onSearch(): void {
+    this.applyFilters();
+  }
+
+  selectType(type: string): void {
+    this.selectedType = this.selectedType === type ? '' : type;
+    this.applyFilters();
+  }
+
+  applyFilters(): void {
+    let list = this.pokemons;
+
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.trim().toLowerCase();
+      list = list.filter(p => p.name.toLowerCase().includes(q) || p.id.toString() === q);
+    }
+
+    if (this.selectedType) {
+      const t = this.selectedType.toLowerCase();
+      list = list.filter(p => p.type1 === t || p.type2 === t);
+    }
+
+    this.filteredPokemons = list;
+  }
+
+  selectSlot(index: number): void {
+    this.selectedSlotIndex = index;
+  }
+
+  addToTeam(pokemon: PokemonListItem): void {
+    if (this.dbOffline) {
+      alert('Database is offline. Changes to the team cannot be saved right now.');
+      return;
+    }
+
+    // Call service to add Pokemon
+    this.pokemonService.addToTeam(pokemon.id, this.selectedSlotIndex).subscribe({
+      next: () => {
+        this.loadTeam(); // Reload team members
+        if (this.showAiCoach) {
+          this.consultAiCoach(); // Refresh AI analysis if drawer is open
+        }
+      },
+      error: (err) => {
+        alert(err.error?.message || 'Failed to add pokemon to team.');
+      }
+    });
+  }
+
+  removeFromSlot(slotIndex: number, event: MouseEvent): void {
+    event.stopPropagation(); // Prevent selecting the slot on remove button click
+    if (this.dbOffline) {
+      alert('Database is offline. Changes to the team cannot be saved right now.');
+      return;
+    }
+
+    this.pokemonService.removeFromSlot(slotIndex).subscribe({
+      next: () => {
+        this.loadTeam();
+        if (this.showAiCoach) {
+          this.consultAiCoach();
+        }
+      },
+      error: (err) => {
+        alert(err.error?.message || 'Failed to remove pokemon from slot.');
+      }
+    });
+  }
+
+  viewPokemonDetails(pokemonId: number): void {
+    this.detailsLoading = true;
+    this.showDetailsModal = true;
+    this.pokemonService.getPokemonDetails(pokemonId).subscribe({
+      next: (details) => {
+        this.selectedPokemon = details;
+        this.detailsLoading = false;
+      },
+      error: (err) => {
+        this.detailsLoading = false;
+        alert('Failed to retrieve Pokemon details.');
+        this.showDetailsModal = false;
+      }
+    });
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.selectedPokemon = null;
+  }
+
+  consultAiCoach(): void {
+    this.showAiCoach = true;
+    this.aiLoading = true;
+    this.pokemonService.getAiAnalysis().subscribe({
+      next: (res) => {
+        this.aiAnalysis = res;
+        this.aiLoading = false;
+      },
+      error: (err) => {
+        this.aiLoading = false;
+        alert('Failed to get AI Coach feedback.');
+        this.showAiCoach = false;
+      }
+    });
+  }
+
+  closeAiCoach(): void {
+    this.showAiCoach = false;
+    this.aiAnalysis = null;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/auth']);
+  }
+}

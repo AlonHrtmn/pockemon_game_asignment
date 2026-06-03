@@ -1,0 +1,334 @@
+<div class="dashboard-container">
+  
+  <!-- System Alert Banners -->
+  <div class="system-alert db-error" *ngIf="dbOffline">
+    <i class="alert-icon">⚠</i> 
+    <span>Database connection offline. Currently operating in Offline Mode. Team modifications cannot be saved.</span>
+  </div>
+  <div class="system-alert api-error" *ngIf="apiDown">
+    <i class="alert-icon">⚠</i> 
+    <span>PokeAPI is currently unreachable. Operating using cached local database records.</span>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="logo-area">
+      <div class="mini-pokeball"></div>
+      <h2>Trainer Dashboard</h2>
+    </div>
+    <div class="trainer-badge">
+      <span class="trainer-name">Trainer: <strong>{{ trainerName }}</strong></span>
+      <button class="logout-btn" (click)="logout()">Log Out</button>
+    </div>
+  </header>
+
+  <main class="dashboard-content">
+
+    <!-- 1. Dream Team Dock Section -->
+    <section class="team-dock-section">
+      <div class="section-title-wrapper">
+        <h3>My Dream Team</h3>
+        <span class="slots-indicator">Slots: 5 Members Max</span>
+      </div>
+
+      <div class="slots-container">
+        <div 
+          *ngFor="let slot of teamSlots; let i = index" 
+          class="team-slot" 
+          [class.active]="selectedSlotIndex === i"
+          [class.filled]="slot !== null"
+          [attr.id]="'team-slot-' + i"
+          (click)="selectSlot(i)">
+          
+          <div class="slot-number">SLOT {{ i + 1 }}</div>
+
+          <div *ngIf="slot" class="filled-slot-content">
+            <button class="release-btn" (click)="removeFromSlot(i, $event)" title="Release Pokemon">×</button>
+            <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" />
+            <div class="slot-name">{{ slot.pokemonName }}</div>
+            <div class="slot-badges">
+              <span class="badge" [attr.data-type]="slot.type1">{{ slot.type1 }}</span>
+              <span class="badge" *ngIf="slot.type2" [attr.data-type]="slot.type2">{{ slot.type2 }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="!slot" class="empty-slot-content">
+            <div class="silhouette-wrapper">
+              <div class="empty-silhouette"></div>
+            </div>
+            <span class="empty-text">Empty Slot</span>
+            <span class="select-text">Click to target</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock-actions">
+        <button 
+          class="ai-coach-btn" 
+          (click)="consultAiCoach()"
+          [disabled]="dbOffline">
+          <i class="ai-icon">💡</i> Consult AI Coach
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. Pokemon Explorer Section -->
+    <section class="explorer-section">
+      <div class="explorer-header">
+        <h3>Pokemon Database</h3>
+        
+        <!-- Search and Filters -->
+        <div class="search-bar-wrapper">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (input)="onSearch()" 
+            placeholder="Search by name or number..." 
+            class="search-input" />
+          <i class="search-icon">🔍</i>
+        </div>
+      </div>
+
+      <!-- Quick Type Filter Badges -->
+      <div class="type-filters">
+        <button 
+          *ngFor="let type of ['Grass', 'Fire', 'Water', 'Electric', 'Psychic', 'Poison', 'Normal', 'Ghost', 'Rock', 'Ice', 'Dragon']" 
+          (click)="selectType(type)"
+          [class.active]="selectedType === type"
+          class="type-filter-btn"
+          [attr.data-type]="type.toLowerCase()">
+          {{ type }}
+        </button>
+      </div>
+
+      <!-- Pokemon Card Grid -->
+      <div class="pokemon-grid">
+        <div *ngFor="let pokemon of filteredPokemons" class="pokemon-card">
+          <div class="card-number">#{{ pokemon.id | number:'3.0-0' }}</div>
+          
+          <div class="card-sprite-wrapper" (click)="viewPokemonDetails(pokemon.id)">
+            <img [src]="pokemon.spriteUrl" [alt]="pokemon.name" class="card-sprite" />
+          </div>
+
+          <div class="card-info" (click)="viewPokemonDetails(pokemon.id)">
+            <h4 class="card-name">{{ pokemon.name }}</h4>
+            <div class="card-badges">
+              <span class="badge" [attr.data-type]="pokemon.type1">{{ pokemon.type1 }}</span>
+              <span class="badge" *ngIf="pokemon.type2" [attr.data-type]="pokemon.type2">{{ pokemon.type2 }}</span>
+            </div>
+          </div>
+
+          <!-- Hover overlay to add to selected slot -->
+          <div class="card-action-overlay">
+            <button 
+              class="add-btn" 
+              (click)="addToTeam(pokemon)"
+              [disabled]="dbOffline">
+              Add to Slot {{ selectedSlotIndex + 1 }}
+            </button>
+            <button class="details-btn" (click)="viewPokemonDetails(pokemon.id)">
+              Stats Profile
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredPokemons.length === 0" class="no-results">
+          <p>No Pokemons found matching your search filters.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 3. AI Coach Drawer -->
+  <div class="drawer-overlay" [class.open]="showAiCoach" (click)="closeAiCoach()"></div>
+  <div class="ai-coach-drawer" [class.open]="showAiCoach">
+    <div class="drawer-header">
+      <div class="coach-avatar">
+        <div class="avatar-eye left"></div>
+        <div class="avatar-eye right"></div>
+      </div>
+      <div class="coach-title-area">
+        <h4>AI Team Coach</h4>
+        <span class="coach-subtitle">Synergy & Battle Coordinator</span>
+      </div>
+      <button class="close-drawer-btn" (click)="closeAiCoach()">×</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="spinner-container" *ngIf="aiLoading">
+        <div class="spinner"></div>
+        <p>Analyzing team synergies...</p>
+      </div>
+
+      <div *ngIf="!aiLoading && aiAnalysis" class="analysis-results">
+        
+        <!-- Style Badge -->
+        <div class="analysis-card style-card">
+          <div class="card-label">TEAM STYLE</div>
+          <h2 class="team-style-badge" [attr.data-style]="aiAnalysis.teamStyle.toLowerCase()">
+            {{ aiAnalysis.teamStyle }}
+          </h2>
+          <p class="style-summary">{{ aiAnalysis.overallSummary }}</p>
+        </div>
+
+        <!-- Strengths -->
+        <div class="analysis-card strengths-card">
+          <h5><i class="card-icon">⚡</i> Type Advantages</h5>
+          <ul>
+            <li *ngFor="let s of aiAnalysis.strengths">{{ s }}</li>
+          </ul>
+        </div>
+
+        <!-- Weaknesses -->
+        <div class="analysis-card weaknesses-card">
+          <h5><i class="card-icon">🔥</i> Tactical Vulnerabilities</h5>
+          <ul>
+            <li *ngFor="let w of aiAnalysis.weaknesses">{{ w }}</li>
+          </ul>
+        </div>
+
+        <!-- Synergy Notes -->
+        <div class="analysis-card synergy-card" *ngIf="aiAnalysis.synergyNotes.length > 0">
+          <h5><i class="card-icon">🧬</i> Team Synergy</h5>
+          <ul>
+            <li *ngFor="let syn of aiAnalysis.synergyNotes">{{ syn }}</li>
+          </ul>
+        </div>
+
+        <!-- Individual reviews -->
+        <div class="analysis-card review-card" *ngIf="aiAnalysis.individualReviews.length > 0">
+          <h5><i class="card-icon">📋</i> Individual Roles</h5>
+          <ul>
+            <li *ngFor="let rev of aiAnalysis.individualReviews">{{ rev }}</li>
+          </ul>
+        </div>
+
+        <!-- Coach Advice -->
+        <div class="analysis-card advice-card">
+          <h5><i class="card-icon">💬</i> Coach Oak's Recommendation</h5>
+          <p class="coach-text">"{{ aiAnalysis.coachAdvice }}"</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Pokemon Details Modal -->
+  <div class="modal-backdrop" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+    <div class="details-modal" (click)="$event.stopPropagation()">
+      <button class="close-modal-btn" (click)="closeDetailsModal()">×</button>
+
+      <div class="spinner-container" *ngIf="detailsLoading">
+        <div class="spinner"></div>
+        <p>Loading stats profiles...</p>
+      </div>
+
+      <div *ngIf="!detailsLoading && selectedPokemon" class="modal-details-body">
+        
+        <div class="modal-left-panel">
+          <div class="modal-sprite-container" [attr.data-type]="selectedPokemon.type1">
+            <img [src]="selectedPokemon.spriteUrl" [alt]="selectedPokemon.name" class="modal-sprite" />
+          </div>
+          <h2 class="modal-name">{{ selectedPokemon.name }}</h2>
+          <div class="modal-id">Database Record #{{ selectedPokemon.id | number:'3.0-0' }}</div>
+          
+          <div class="modal-badges">
+            <span class="badge" [attr.data-type]="selectedPokemon.type1">{{ selectedPokemon.type1 }}</span>
+            <span class="badge" *ngIf="selectedPokemon.type2" [attr.data-type]="selectedPokemon.type2">{{ selectedPokemon.type2 }}</span>
+          </div>
+
+          <div class="physical-attributes">
+            <div class="attr-box">
+              <span class="attr-val">{{ selectedPokemon.height / 10 }} m</span>
+              <span class="attr-lbl">HEIGHT</span>
+            </div>
+            <div class="attr-box">
+              <span class="attr-val">{{ selectedPokemon.weight / 10 }} kg</span>
+              <span class="attr-lbl">WEIGHT</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-right-panel">
+          <div class="profile-section">
+            <h5>Flavor Profile</h5>
+            <p class="flavor-text">"{{ selectedPokemon.description }}"</p>
+          </div>
+
+          <div class="profile-section">
+            <h5>Abilities</h5>
+            <div class="abilities-list">
+              <span *ngFor="let ab of selectedPokemon.abilities" class="ability-tag">{{ ab }}</span>
+            </div>
+          </div>
+
+          <!-- Base Stats -->
+          <div class="profile-section">
+            <h5>Base Combat Stats</h5>
+            <div class="stats-list">
+              <div class="stat-row">
+                <span class="stat-name">HP</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar hp-bar" [style.width.%]="(selectedPokemon.hp / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.hp }}</span>
+              </div>
+
+              <div class="stat-row">
+                <span class="stat-name">Attack</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar attack-bar" [style.width.%]="(selectedPokemon.attack / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.attack }}</span>
+              </div>
+
+              <div class="stat-row">
+                <span class="stat-name">Defense</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar defense-bar" [style.width.%]="(selectedPokemon.defense / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.defense }}</span>
+              </div>
+
+              <div class="stat-row">
+                <span class="stat-name">Sp. Atk</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar spatk-bar" [style.width.%]="(selectedPokemon.specialAttack / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.specialAttack }}</span>
+              </div>
+
+              <div class="stat-row">
+                <span class="stat-name">Sp. Def</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar spdef-bar" [style.width.%]="(selectedPokemon.specialDefense / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.specialDefense }}</span>
+              </div>
+
+              <div class="stat-row">
+                <span class="stat-name">Speed</span>
+                <div class="stat-bar-container">
+                  <div class="stat-bar speed-bar" [style.width.%]="(selectedPokemon.speed / 180) * 100"></div>
+                </div>
+                <span class="stat-value">{{ selectedPokemon.speed }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button 
+              class="add-from-modal-btn" 
+              (click)="addToTeam(selectedPokemon); closeDetailsModal()"
+              [disabled]="dbOffline">
+              Add to Team Slot {{ selectedSlotIndex + 1 }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
