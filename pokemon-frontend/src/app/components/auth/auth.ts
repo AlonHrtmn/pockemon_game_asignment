@@ -60,14 +60,19 @@ export class AuthComponent {
     } else {
       this.authService.register(credentials).subscribe({
         next: (res) => {
-          this.isLoading = false;
-          this.successMessage = res.message || 'Registration successful! You can now log in.';
-          // Automatically switch to login mode after 2 seconds
-          setTimeout(() => {
-            this.isLoginMode = true;
-            this.successMessage = '';
-            this.password = '';
-          }, 2000);
+          this.successMessage = 'Registration successful! Accessing portal...';
+          // Automatically log in on success
+          this.authService.login(credentials).subscribe({
+            next: () => {
+              this.isLoading = false;
+              this.router.navigate(['/dashboard']);
+            },
+            error: (err) => {
+              this.isLoading = false;
+              this.isLoginMode = true;
+              this.errorMessage = 'Account created, please enter access code manually.';
+            }
+          });
         },
         error: (err) => {
           this.isLoading = false;

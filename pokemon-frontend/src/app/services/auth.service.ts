@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Credentials {
   username: string;
@@ -16,7 +17,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5088/api/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
   
   // Use modern Angular Signals to track the logged-in user state reactively
   currentUser = signal<string | null>(localStorage.getItem('trainer_username'));

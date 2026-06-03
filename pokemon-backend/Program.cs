@@ -13,6 +13,10 @@ using pokemon_backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure dynamic port binding for cloud deployment
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5088";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 // 1. Add Controllers support
 builder.Services.AddControllers();
 
@@ -22,6 +26,11 @@ if (dbProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
+}
+else if (dbProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("SupabaseConnection")));
 }
 else
 {
