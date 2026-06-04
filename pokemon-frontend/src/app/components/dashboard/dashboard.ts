@@ -240,16 +240,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.aiAnalysis = null;
   }
 
-  // Scroll to bottom functionality
+  // Scroll functionality
   private scrollInterval: any = null;
+  private scrollUpInterval: any = null;
 
   ngOnDestroy(): void {
     this.stopScrollDown();
+    this.stopScrollUp();
   }
 
   scrollToBottom(): void {
     window.scrollTo({
       top: document.body.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+
+  scrollToTop(): void {
+    window.scrollTo({
+      top: 0,
       behavior: 'smooth'
     });
   }
@@ -272,6 +281,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.scrollInterval) {
       clearInterval(this.scrollInterval);
       this.scrollInterval = null;
+    }
+  }
+
+  startScrollUp(event?: Event): void {
+    if (event) {
+      event.preventDefault(); // Prevent zoom/touch events on mobile
+    }
+    if (this.scrollUpInterval) return;
+
+    this.scrollUpInterval = setInterval(() => {
+      window.scrollBy({
+        top: -25,
+        behavior: 'smooth'
+      });
+    }, 20);
+  }
+
+  stopScrollUp(): void {
+    if (this.scrollUpInterval) {
+      clearInterval(this.scrollUpInterval);
+      this.scrollUpInterval = null;
     }
   }
 

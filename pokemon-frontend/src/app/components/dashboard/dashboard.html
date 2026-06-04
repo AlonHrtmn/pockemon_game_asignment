@@ -331,7 +331,19 @@
     </div>
   </div>
 
-  <!-- Floating Scroll-to-Bottom Button -->
+  <!-- Floating Scroll-to-Top and Scroll-to-Bottom Buttons -->
+  <button 
+    class="scroll-top-btn" 
+    title="Scroll to Top (Hold to Scroll)"
+    (click)="scrollToTop()"
+    (mousedown)="startScrollUp($event)"
+    (mouseup)="stopScrollUp()"
+    (mouseleave)="stopScrollUp()"
+    (touchstart)="startScrollUp($event)"
+    (touchend)="stopScrollUp()">
+    <span class="arrow-icon">↑</span>
+  </button>
+
   <button 
     class="scroll-bottom-btn" 
     title="Scroll to Bottom (Hold to Scroll)"
