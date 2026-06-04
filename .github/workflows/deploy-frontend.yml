@@ -1,0 +1,41 @@
+name: Deploy Angular to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pokemon-frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          cd pokemon-frontend
+          npm ci
+
+      - name: Build Application
+        run: |
+          cd pokemon-frontend
+          npx ng build --configuration production --base-href /pockemon_game_asignment/
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: pokemon-frontend/dist/pokemon-frontend/browser
+          branch: gh-pages
