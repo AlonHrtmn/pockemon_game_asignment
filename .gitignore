@@ -28,3 +28,6 @@ yarn-error.log*
 .env.local
 .env.*.local
 appsettings.Development.json
+
+# Personal drafts / notes
+email_to_asaf.txt
