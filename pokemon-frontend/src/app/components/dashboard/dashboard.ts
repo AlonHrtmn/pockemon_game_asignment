@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,7 +12,7 @@ import { PokemonService, PokemonListItem, PokemonDetails, DreamTeamMember, AiCoa
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   trainerName = '';
   pokemons: PokemonListItem[] = [];
   filteredPokemons: PokemonListItem[] = [];
@@ -238,6 +238,41 @@ export class DashboardComponent implements OnInit {
   closeAiCoach(): void {
     this.showAiCoach = false;
     this.aiAnalysis = null;
+  }
+
+  // Scroll to bottom functionality
+  private scrollInterval: any = null;
+
+  ngOnDestroy(): void {
+    this.stopScrollDown();
+  }
+
+  scrollToBottom(): void {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+
+  startScrollDown(event?: Event): void {
+    if (event) {
+      event.preventDefault(); // Prevent zoom/touch events on mobile
+    }
+    if (this.scrollInterval) return;
+
+    this.scrollInterval = setInterval(() => {
+      window.scrollBy({
+        top: 25,
+        behavior: 'smooth'
+      });
+    }, 20);
+  }
+
+  stopScrollDown(): void {
+    if (this.scrollInterval) {
+      clearInterval(this.scrollInterval);
+      this.scrollInterval = null;
+    }
   }
 
   logout(): void {

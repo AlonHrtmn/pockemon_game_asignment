@@ -1124,3 +1124,51 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Floating Scroll Bottom Button */
+.scroll-bottom-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(18, 17, 26, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 83, 83, 0.4);
+  color: #ff5353;
+  font-size: 26px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 60;
+  box-shadow: 0 4px 20px rgba(255, 83, 83, 0.25);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+  -webkit-user-select: none;
+  animation: floatArrow 2s infinite ease-in-out;
+}
+
+.scroll-bottom-btn:hover {
+  background: #ff5353;
+  color: #fff;
+  border-color: #ff5353;
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(255, 83, 83, 0.5);
+}
+
+.scroll-bottom-btn:active {
+  transform: scale(0.95);
+}
+
+.arrow-icon {
+  margin-top: -4px; /* visually center the down arrow icon */
+}
+
+@keyframes floatArrow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
