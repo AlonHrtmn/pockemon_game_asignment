@@ -123,11 +123,17 @@
 
 /* 1. Team Dock Styles */
 .team-dock-section {
-  background: rgba(18, 17, 26, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(18, 17, 26, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  padding: 20px 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 20px;
+  z-index: 50;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .section-title-wrapper {

@@ -131,15 +131,35 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Call service to add Pokemon
-    this.pokemonService.addToTeam(pokemon.id, this.selectedSlotIndex).subscribe({
+    const previousSlotState = this.teamSlots[this.selectedSlotIndex];
+    const targetSlotIndex = this.selectedSlotIndex;
+
+    // Optimistically update the slot in the UI immediately
+    this.teamSlots[targetSlotIndex] = {
+      id: 0,
+      userId: 0,
+      pokemonId: pokemon.id,
+      pokemonName: pokemon.name,
+      spriteUrl: pokemon.spriteUrl,
+      type1: pokemon.type1,
+      type2: pokemon.type2,
+      slotIndex: targetSlotIndex,
+      addedAt: new Date().toISOString()
+    };
+    this.cdr.markForCheck();
+
+    // Call service to add Pokemon to the backend
+    this.pokemonService.addToTeam(pokemon.id, targetSlotIndex).subscribe({
       next: () => {
-        this.loadTeam(); // Reload team members
+        this.loadTeam(); // Reload team members for final sync from DB
         if (this.showAiCoach) {
           this.consultAiCoach(); // Refresh AI analysis if drawer is open
         }
       },
       error: (err) => {
+        // Rollback on error
+        this.teamSlots[targetSlotIndex] = previousSlotState;
+        this.cdr.markForCheck();
         alert(err.error?.message || 'Failed to add pokemon to team.');
       }
     });
@@ -152,6 +172,12 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
+    const previousSlotState = this.teamSlots[slotIndex];
+    
+    // Optimistically remove the slot in the UI immediately
+    this.teamSlots[slotIndex] = null;
+    this.cdr.markForCheck();
+
     this.pokemonService.removeFromSlot(slotIndex).subscribe({
       next: () => {
         this.loadTeam();
@@ -160,6 +186,9 @@ export class DashboardComponent implements OnInit {
         }
       },
       error: (err) => {
+        // Rollback on error
+        this.teamSlots[slotIndex] = previousSlotState;
+        this.cdr.markForCheck();
         alert(err.error?.message || 'Failed to remove pokemon from slot.');
       }
     });
