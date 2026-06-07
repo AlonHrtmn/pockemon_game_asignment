@@ -44,9 +44,9 @@ namespace pokemon_backend.Controllers
                 var team = await _teamService.GetTeamAsync(userId);
                 return Ok(team);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { Message = "Error retrieving team.", Details = ex.Message });
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
 
@@ -74,9 +74,13 @@ namespace pokemon_backend.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
             {
-                return StatusCode(500, new { Message = "Error adding to team.", Details = ex.Message });
+                return Conflict(new { Message = "A concurrency conflict occurred. The selected slot or Pokemon has already been updated. Please refresh and try again." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
 
@@ -93,9 +97,13 @@ namespace pokemon_backend.Controllers
                 }
                 return Ok(new { Message = "Pokemon removed from team successfully." });
             }
-            catch (Exception ex)
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
             {
-                return StatusCode(500, new { Message = "Error removing from team.", Details = ex.Message });
+                return Conflict(new { Message = "A concurrency conflict occurred. Please try again." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
 
@@ -112,9 +120,13 @@ namespace pokemon_backend.Controllers
                 }
                 return Ok(new { Message = $"Slot {slotIndex} cleared successfully." });
             }
-            catch (Exception ex)
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
             {
-                return StatusCode(500, new { Message = "Error clearing slot.", Details = ex.Message });
+                return Conflict(new { Message = "A concurrency conflict occurred. Please try again." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
 
@@ -131,9 +143,13 @@ namespace pokemon_backend.Controllers
                 }
                 return Ok(new { Message = "Dream team cleared successfully." });
             }
-            catch (Exception ex)
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
             {
-                return StatusCode(500, new { Message = "Error clearing team.", Details = ex.Message });
+                return Conflict(new { Message = "A concurrency conflict occurred. Please try again." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
     }

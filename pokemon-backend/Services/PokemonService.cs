@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using pokemon_backend.Data;
 using pokemon_backend.Models;
@@ -18,9 +19,10 @@ namespace pokemon_backend.Services
         private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
         private readonly ILogger<PokemonService> _logger;
+        private readonly IMemoryCache _memoryCache;
 
-        // Hardcoded list of the original 151 Pokemons for high performance list loading and offline fallback
-        private static readonly string[] PokemonNames = new[]
+        // Fallback list of the original 151 Pokemons if PokeAPI is offline during first launch database seeding
+        private static readonly string[] SeederFallbackNames = new[]
         {
             "bulbasaur", "ivysaur", "venusaur", "charmander", "charmeleon", "charizard",
             "squirtle", "wartortle", "blastoise", "caterpie", "metapod", "butterfree",
@@ -61,30 +63,182 @@ namespace pokemon_backend.Services
             { "normal", new[] { "pidgey", "pidgeotto", "pidgeot", "rattata", "raticate", "spearow", "fearow", "meowth", "persian", "farfetchd", "doduo", "dodrio", "lickitung", "chansey", "kangaskhan", "tauros", "ditto", "eevee", "porygon", "snorlax" } }
         };
 
-        public PokemonService(AppDbContext context, HttpClient httpClient, ILogger<PokemonService> logger)
+        private class PokeApiListResponse
+        {
+            [JsonPropertyName("results")] public List<PokeApiListResult> Results { get; set; } = new();
+        }
+
+        private class PokeApiListResult
+        {
+            [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+            [JsonPropertyName("url")] public string Url { get; set; } = string.Empty;
+        }
+
+        public PokemonService(AppDbContext context, HttpClient httpClient, ILogger<PokemonService> logger, IMemoryCache memoryCache)
         {
             _context = context;
             _httpClient = httpClient;
             _logger = logger;
+            _memoryCache = memoryCache;
             _httpClient.Timeout = TimeSpan.FromSeconds(5); // Fast timeout for responsiveness
+        }
+
+        private async Task SeedDatabaseCacheAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Database Pokemon Cache is empty. Seeding catalog...");
+
+                List<(int id, string name)> catalog = new();
+
+                // Try fetching catalog list from PokeAPI
+                try
+                {
+                    var response = await _httpClient.GetAsync("https://pokeapi.co/api/v2/pokemon?limit=151");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var data = await response.Content.ReadFromJsonAsync<PokeApiListResponse>();
+                        if (data != null && data.Results.Count > 0)
+                        {
+                            catalog = data.Results.Select((r, index) =>
+                            {
+                                int id = index + 1;
+                                var parts = r.Url.TrimEnd('/').Split('/');
+                                if (parts.Length > 0 && int.TryParse(parts[^1], out int parsedId))
+                                {
+                                    id = parsedId;
+                                }
+                                return (id, r.Name);
+                            }).ToList();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch catalog from PokeAPI. Using local fallback list.");
+                }
+
+                // If PokeAPI call failed or empty, use fallback list
+                if (catalog.Count == 0)
+                {
+                    catalog = SeederFallbackNames.Select((name, index) => (index + 1, name)).ToList();
+                }
+
+                // Seed database cache with minimal placeholders
+                foreach (var item in catalog)
+                {
+                    var mockDetails = GenerateMockDetails(item.id, item.name);
+                    mockDetails.Description = $"[SEED] {mockDetails.Description}";
+
+                    var json = JsonSerializer.Serialize(mockDetails);
+
+                    _context.PokemonCache.Add(new PokemonCacheItem
+                    {
+                        PokemonId = item.id,
+                        Name = item.name,
+                        DetailsJson = json,
+                        LastUpdatedAt = DateTime.UtcNow
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Successfully seeded {catalog.Count} Pokemon into database cache.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to seed database cache.");
+            }
         }
 
         public async Task<List<PokemonListItemDto>> GetAllPokemonsAsync()
         {
-            // Serve the list immediately from memory/code for maximum performance
-            return PokemonNames.Select((name, index) =>
+            // Serve immediately from memory cache if available
+            if (_memoryCache.TryGetValue("pokemon_list_all", out List<PokemonListItemDto>? cachedList) && cachedList != null)
             {
-                int id = index + 1;
-                var types = GetMockTypes(id, name);
+                return cachedList;
+            }
+
+            // Check if DB is empty
+            int dbCount = 0;
+            try
+            {
+                dbCount = await _context.PokemonCache.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to check database count.");
+            }
+
+            if (dbCount == 0)
+            {
+                await SeedDatabaseCacheAsync();
+            }
+
+            // Load from database cache
+            List<PokemonCacheItem> dbItems = new();
+            try
+            {
+                dbItems = await _context.PokemonCache.OrderBy(p => p.PokemonId).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to read Pokemon list from database cache.");
+            }
+
+            // Map to list dtos
+            var result = dbItems.Select(item =>
+            {
+                PokemonDetailsDto? details = null;
+                try
+                {
+                    details = JsonSerializer.Deserialize<PokemonDetailsDto>(item.DetailsJson);
+                }
+                catch {}
+
+                if (details == null)
+                {
+                    return new PokemonListItemDto
+                    {
+                        Id = item.PokemonId,
+                        Name = char.ToUpper(item.Name[0]) + item.Name.Substring(1),
+                        SpriteUrl = GetOfficialArtworkUrl(item.PokemonId),
+                        Type1 = "normal"
+                    };
+                }
+
                 return new PokemonListItemDto
                 {
-                    Id = id,
-                    Name = char.ToUpper(name[0]) + name.Substring(1),
-                    SpriteUrl = GetOfficialArtworkUrl(id),
-                    Type1 = types.type1,
-                    Type2 = types.type2
+                    Id = details.Id,
+                    Name = details.Name,
+                    SpriteUrl = details.SpriteUrl,
+                    Type1 = details.Type1,
+                    Type2 = details.Type2
                 };
             }).ToList();
+
+            // Direct fallback if database is offline or empty
+            if (result.Count == 0)
+            {
+                _logger.LogWarning("Database unreachable or empty. Serving catalog from static fallback.");
+                return SeederFallbackNames.Select((name, index) =>
+                {
+                    int id = index + 1;
+                    var types = GetMockTypes(id, name);
+                    return new PokemonListItemDto
+                    {
+                        Id = id,
+                        Name = char.ToUpper(name[0]) + name.Substring(1),
+                        SpriteUrl = GetOfficialArtworkUrl(id),
+                        Type1 = types.type1,
+                        Type2 = types.type2
+                    };
+                }).ToList();
+            }
+
+            // Store in memory cache
+            _memoryCache.Set("pokemon_list_all", result, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1) });
+
+            return result;
         }
 
         public async Task<PokemonDetailsDto?> GetPokemonDetailsAsync(int id)
@@ -94,24 +248,51 @@ namespace pokemon_backend.Services
                 return null;
             }
 
-            string name = PokemonNames[id - 1];
+            // 0. Check Memory Cache (fastest tier)
+            if (_memoryCache.TryGetValue($"pokemon_{id}", out PokemonDetailsDto? memoryCached) && memoryCached != null)
+            {
+                if (memoryCached.Description == null || !memoryCached.Description.StartsWith("[SEED]"))
+                {
+                    return memoryCached;
+                }
+            }
 
             // 1. Check Database Cache
+            PokemonCacheItem? cached = null;
             try
             {
-                var cached = await _context.PokemonCache.FirstOrDefaultAsync(p => p.PokemonId == id);
+                cached = await _context.PokemonCache.FirstOrDefaultAsync(p => p.PokemonId == id);
                 if (cached != null)
                 {
-                    // Refresh cache if older than 24 hours (optional, but keep it fresh)
-                    if (DateTime.UtcNow - cached.LastUpdatedAt < TimeSpan.FromHours(24))
+                    var dto = JsonSerializer.Deserialize<PokemonDetailsDto>(cached.DetailsJson);
+                    if (dto != null && (dto.Description == null || !dto.Description.StartsWith("[SEED]")))
                     {
-                        return JsonSerializer.Deserialize<PokemonDetailsDto>(cached.DetailsJson);
+                        if (DateTime.UtcNow - cached.LastUpdatedAt < TimeSpan.FromHours(24))
+                        {
+                            _memoryCache.Set($"pokemon_{id}", dto, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromMinutes(30) });
+                            return dto;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Database cache query failed. Falling back to API/Mock.");
+            }
+
+            // Determine name
+            string name = string.Empty;
+            if (cached != null)
+            {
+                name = cached.Name;
+            }
+            else if (id <= SeederFallbackNames.Length)
+            {
+                name = SeederFallbackNames[id - 1];
+            }
+            else
+            {
+                name = $"pokemon-{id}";
             }
 
             // 2. Fetch from PokeAPI
@@ -125,8 +306,12 @@ namespace pokemon_backend.Services
                     {
                         var details = MapApiDataToDto(apiData);
                         
-                        // Save to Database Cache
                         await SaveToCacheAsync(id, details);
+
+                        _memoryCache.Set($"pokemon_{id}", details, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromMinutes(30) });
+
+                        // Evict the list from memory cache so type updates are propagated
+                        _memoryCache.Remove("pokemon_list_all");
 
                         return details;
                     }
@@ -134,33 +319,52 @@ namespace pokemon_backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"Failed to fetch Pokemon {id} from API. Using local mock generator.");
+                _logger.LogWarning(ex, $"Failed to fetch Pokemon {id} from API. Using local mock/seed cache.");
             }
 
-            // 3. Fallback to Local Database Cache (even if expired) or Mock Generator
-            try
+            // 3. Fallback to existing seed record
+            if (cached != null)
             {
-                var cached = await _context.PokemonCache.FirstOrDefaultAsync(p => p.PokemonId == id);
-                if (cached != null)
+                var dto = JsonSerializer.Deserialize<PokemonDetailsDto>(cached.DetailsJson);
+                if (dto != null)
                 {
-                    _logger.LogInformation($"Serving expired cache for Pokemon {id} due to API unavailability.");
-                    return JsonSerializer.Deserialize<PokemonDetailsDto>(cached.DetailsJson);
+                    _memoryCache.Set($"pokemon_{id}", dto, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromMinutes(30) });
+                    return dto;
                 }
             }
-            catch {}
 
-            return GenerateMockDetails(id, name);
+            // 4. Mock fallback
+            var mockDetails = GenerateMockDetails(id, name);
+            _memoryCache.Set($"pokemon_{id}", mockDetails, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromMinutes(5) });
+            return mockDetails;
         }
 
         public async Task<PokemonDetailsDto?> GetPokemonDetailsAsync(string name)
         {
             string cleanName = name.Trim().ToLower();
-            int index = Array.IndexOf(PokemonNames, cleanName);
-            if (index == -1)
+
+            int id = -1;
+            try
             {
-                return null;
+                var cachedItem = await _context.PokemonCache.FirstOrDefaultAsync(p => p.Name == cleanName);
+                if (cachedItem != null)
+                {
+                    id = cachedItem.PokemonId;
+                }
             }
-            return await GetPokemonDetailsAsync(index + 1);
+            catch {}
+
+            if (id == -1)
+            {
+                int index = Array.IndexOf(SeederFallbackNames, cleanName);
+                if (index == -1)
+                {
+                    return null;
+                }
+                id = index + 1;
+            }
+
+            return await GetPokemonDetailsAsync(id);
         }
 
         private async Task SaveToCacheAsync(int id, PokemonDetailsDto details)

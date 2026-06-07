@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -22,7 +23,7 @@ export class AuthService {
   // Use modern Angular Signals to track the logged-in user state reactively
   currentUser = signal<string | null>(localStorage.getItem('trainer_username'));
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   register(credentials: Credentials): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, credentials);
@@ -39,9 +40,14 @@ export class AuthService {
   }
 
   logout(): void {
+    const username = this.currentUser();
     localStorage.removeItem('trainer_token');
     localStorage.removeItem('trainer_username');
+    if (username) {
+      localStorage.removeItem(`team_cache_${username}`);
+    }
     this.currentUser.set(null);
+    this.router.navigate(['/auth']);
   }
 
   getToken(): string | null {

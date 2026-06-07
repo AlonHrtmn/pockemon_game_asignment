@@ -108,25 +108,29 @@ namespace pokemon_backend_tests
             await _authService.RegisterAsync(username, password);
 
             // Act
-            var token = await _authService.LoginAsync(username, password);
+            var result = await _authService.LoginAsync(username, password);
 
             // Assert
-            Assert.NotNull(token);
-            Assert.NotEmpty(token);
+            Assert.NotNull(result);
+            Assert.NotNull(result.Token);
+            Assert.NotEmpty(result.Token);
+            Assert.Null(result.ErrorCode);
         }
 
         [Fact]
-        public async Task LoginAsync_NonExistingUser_ReturnsNull()
+        public async Task LoginAsync_NonExistingUser_ReturnsUserNotFoundError()
         {
             // Act
-            var token = await _authService.LoginAsync("nonexistent", "somepassword");
+            var result = await _authService.LoginAsync("nonexistent", "somepassword");
 
             // Assert
-            Assert.Null(token);
+            Assert.NotNull(result);
+            Assert.Null(result.Token);
+            Assert.Equal("USER_NOT_FOUND", result.ErrorCode);
         }
 
         [Fact]
-        public async Task LoginAsync_WrongPassword_ReturnsNull()
+        public async Task LoginAsync_WrongPassword_ReturnsWrongPasswordError()
         {
             // Arrange
             string username = "testuser";
@@ -135,10 +139,12 @@ namespace pokemon_backend_tests
             await _authService.RegisterAsync(username, password);
 
             // Act
-            var token = await _authService.LoginAsync(username, "wrongpassword");
+            var result = await _authService.LoginAsync(username, "wrongpassword");
 
             // Assert
-            Assert.Null(token);
+            Assert.NotNull(result);
+            Assert.Null(result.Token);
+            Assert.Equal("WRONG_PASSWORD", result.ErrorCode);
         }
 
         [Fact]

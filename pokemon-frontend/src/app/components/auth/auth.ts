@@ -40,14 +40,41 @@ export class AuthComponent {
   }
 
   onSubmit(): void {
-    if (!this.username.trim() || !this.password.trim()) {
+    if (this.isLoading) {
+      return;
+    }
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const username = this.username.trim();
+    const password = this.password.trim();
+
+    if (!username && !password) {
       this.errorMessage = 'Please enter both username and password.';
       this.cdr.markForCheck();
       return;
     }
+    if (!username) {
+      this.errorMessage = 'Please enter a username.';
+      this.cdr.markForCheck();
+      return;
+    }
+    if (!password) {
+      this.errorMessage = 'Please enter a password.';
+      this.cdr.markForCheck();
+      return;
+    }
+    if (username.length < 3) {
+      this.errorMessage = 'Username must be at least 3 characters.';
+      this.cdr.markForCheck();
+      return;
+    }
+    if (password.length < 4) {
+      this.errorMessage = 'Password must be at least 4 characters.';
+      this.cdr.markForCheck();
+      return;
+    }
 
-    this.errorMessage = '';
-    this.successMessage = '';
     this.isLoading = true;
     this.cdr.markForCheck();
 
@@ -62,7 +89,20 @@ export class AuthComponent {
         },
         error: (err) => {
           this.isLoading = false;
-          this.errorMessage = err.error?.message || 'Login failed. Please verify your credentials.';
+          const msg = err.error?.message;
+          if (err.status === 401) {
+            if (msg === 'User not found') {
+              this.errorMessage = 'User not found. Please check your username or register a new account.';
+            } else if (msg === 'Wrong password') {
+              this.errorMessage = 'Wrong password. Please try again.';
+            } else {
+              this.errorMessage = 'Login failed. Please verify your credentials.';
+            }
+          } else if (err.status === 503 || err.status === 0) {
+            this.errorMessage = 'Service temporarily unavailable. Please try again later.';
+          } else {
+            this.errorMessage = msg || 'Login failed. Please verify your credentials.';
+          }
           this.cdr.markForCheck();
         }
       });
@@ -88,7 +128,14 @@ export class AuthComponent {
         },
         error: (err) => {
           this.isLoading = false;
-          this.errorMessage = err.error?.message || 'Registration failed. Try a different username.';
+          const msg = err.error?.message;
+          if (err.status === 409) {
+            this.errorMessage = 'Username already exists. Please choose a different username.';
+          } else if (err.status === 503 || err.status === 0) {
+            this.errorMessage = 'Service temporarily unavailable. Please try again later.';
+          } else {
+            this.errorMessage = msg || 'Registration failed. Please try again.';
+          }
           this.cdr.markForCheck();
         }
       });

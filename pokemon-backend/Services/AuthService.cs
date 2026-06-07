@@ -44,15 +44,20 @@ namespace pokemon_backend.Services
             return user;
         }
 
-        public async Task<string?> LoginAsync(string username, string password)
+        public async Task<LoginResultDto> LoginAsync(string username, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
-            if (user == null || !VerifyPassword(password, user.PasswordHash))
+            if (user == null)
             {
-                return null;
+                return new LoginResultDto { ErrorCode = "USER_NOT_FOUND" };
             }
 
-            return GenerateJwtToken(user);
+            if (!VerifyPassword(password, user.PasswordHash))
+            {
+                return new LoginResultDto { ErrorCode = "WRONG_PASSWORD" };
+            }
+
+            return new LoginResultDto { Token = GenerateJwtToken(user) };
         }
 
         public string HashPassword(string password)

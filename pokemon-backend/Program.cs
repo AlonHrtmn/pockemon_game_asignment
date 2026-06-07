@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using pokemon_backend.Data;
 using pokemon_backend.Services;
+using pokemon_backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,11 @@ if (dbProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 else if (dbProvider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("SupabaseConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("SupabaseConnection"), npgsqlOptions => 
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null)));
 }
 else
 {
@@ -39,6 +44,7 @@ else
 }
 
 // 3. Register Services for Dependency Injection
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPokemonService, PokemonService>();
@@ -154,10 +160,17 @@ app.UseSwaggerUI(c =>
 
 app.UseCors("AllowAngular");
 
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 // Authentication must run before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/health", async (AppDbContext ctx) => {
+    try { await ctx.Database.CanConnectAsync(); return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }); }
+    catch { return Results.Json(new { status = "unhealthy", timestamp = DateTime.UtcNow }, statusCode: 503); }
+}).AllowAnonymous();
 
 app.Run();

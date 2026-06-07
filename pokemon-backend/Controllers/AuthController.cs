@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using pokemon_backend.Services;
 
 namespace pokemon_backend.Controllers
@@ -37,13 +38,24 @@ namespace pokemon_backend.Controllers
                 return BadRequest(new { Message = "Username must be at least 3 characters, and password at least 4 characters." });
             }
 
-            var user = await _authService.RegisterAsync(credentials.Username, credentials.Password);
-            if (user == null)
+            try
             {
-                return Conflict(new { Message = "Username is already taken." });
-            }
+                var user = await _authService.RegisterAsync(credentials.Username, credentials.Password);
+                if (user == null)
+                {
+                    return Conflict(new { message = "Username already exists" });
+                }
 
-            return Ok(new { Message = "Registration successful! You can now log in.", Username = user.Username });
+                return Ok(new { Message = "Registration successful! You can now log in.", Username = user.Username });
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(503, new { message = "Service temporarily unavailable. Please try again later." });
+            }
+            catch (Npgsql.NpgsqlException)
+            {
+                return StatusCode(503, new { message = "Service temporarily unavailable. Please try again later." });
+            }
         }
 
         [HttpPost("login")]
@@ -55,13 +67,30 @@ namespace pokemon_backend.Controllers
                 return BadRequest(new { Message = "Username and password cannot be empty." });
             }
 
-            var token = await _authService.LoginAsync(credentials.Username, credentials.Password);
-            if (token == null)
+            try
             {
-                return Unauthorized(new { Message = "Invalid username or password." });
-            }
+                var result = await _authService.LoginAsync(credentials.Username, credentials.Password);
 
-            return Ok(new { Token = token, Username = credentials.Username });
+                if (result.ErrorCode == "USER_NOT_FOUND")
+                {
+                    return Unauthorized(new { message = "User not found" });
+                }
+
+                if (result.ErrorCode == "WRONG_PASSWORD")
+                {
+                    return Unauthorized(new { message = "Wrong password" });
+                }
+
+                return Ok(new { Token = result.Token, Username = credentials.Username });
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(503, new { message = "Service temporarily unavailable. Please try again later." });
+            }
+            catch (Npgsql.NpgsqlException)
+            {
+                return StatusCode(503, new { message = "Service temporarily unavailable. Please try again later." });
+            }
         }
     }
 }

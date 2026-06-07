@@ -40,6 +40,14 @@ namespace pokemon_backend.Services
 
             int count = detailsList.Count;
 
+            if (count == 0)
+            {
+                response.OverallSummary = "Failed to retrieve details for any Pokemon on your team. Unable to perform analysis.";
+                response.TeamStyle = "Unknown";
+                response.CoachAdvice = "Please make sure the Pokemon on your team have valid IDs and try again.";
+                return response;
+            }
+
             // 2. Perform Stats Analysis
             double avgHp = detailsList.Average(p => p.Hp);
             double avgAttack = detailsList.Average(p => p.Attack);
@@ -257,6 +265,18 @@ namespace pokemon_backend.Services
                         break;
                     case "dragon":
                         weaknesses.AddRange(new[] { "ice", "dragon", "fairy" });
+                        break;
+                    case "fighting":
+                        weaknesses.AddRange(new[] { "flying", "psychic", "fairy" });
+                        break;
+                    case "steel":
+                        weaknesses.AddRange(new[] { "fire", "fighting", "ground" });
+                        break;
+                    case "fairy":
+                        weaknesses.AddRange(new[] { "poison", "steel" });
+                        break;
+                    case "dark":
+                        weaknesses.AddRange(new[] { "fighting", "bug", "fairy" });
                         break;
                 }
             }

@@ -41,9 +41,9 @@ namespace pokemon_backend.Controllers
                 var analysis = await _aiCoachService.AnalyzeTeamAsync(team);
                 return Ok(analysis);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { Message = "Error running AI analysis.", Details = ex.Message });
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
     }

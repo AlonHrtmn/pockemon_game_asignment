@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
@@ -13,7 +14,8 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        provideRouter([])
       ]
     });
     service = TestBed.inject(AuthService);

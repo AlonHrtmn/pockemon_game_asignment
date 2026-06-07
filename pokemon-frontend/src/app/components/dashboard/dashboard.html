@@ -1,5 +1,18 @@
 <div class="dashboard-container">
   
+  <!-- Game-like Global Input HUD Shield -->
+  <div class="hud-loader-shield" *ngIf="teamUpdating || aiLoading">
+    <div class="hud-scanner-line"></div>
+    <div class="hud-shield-content">
+      <div class="hud-spinner">
+        <div class="hud-pokeball-spinner"></div>
+      </div>
+      <p class="hud-text">
+        {{ teamUpdating ? 'SYNCING DATA WITH SERVER...' : 'AI COACH ANALYZING TEAM...' }}
+      </p>
+    </div>
+  </div>
+  
   <!-- System Alert Banners -->
   <div class="system-alert db-error" *ngIf="dbOffline">
     <i class="alert-icon">⚠</i> 
@@ -43,7 +56,7 @@
           <div class="slot-number">SLOT {{ i + 1 }}</div>
 
           <div *ngIf="slot" class="filled-slot-content">
-            <button class="release-btn" (click)="removeFromSlot(i, $event)" title="Release Pokemon">×</button>
+            <button class="release-btn" (click)="removeFromSlot(i, $event)" [disabled]="teamUpdating" title="Release Pokemon">×</button>
             <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" />
             <div class="slot-name">{{ slot.pokemonName }}</div>
             <div class="slot-badges">
@@ -63,10 +76,33 @@
       </div>
 
       <div class="dock-actions">
+        <!-- Search and Filters -->
+        <div class="search-bar-wrapper">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (input)="onSearch()" 
+            placeholder="Search by name or number" 
+            class="search-input" />
+          <i class="search-icon">🔍</i>
+        </div>
+
+        <!-- Quick Type Filter Badges -->
+        <div class="type-filters">
+          <button 
+            *ngFor="let type of ['Grass', 'Fire', 'Water', 'Electric', 'Psychic', 'Poison', 'Normal', 'Ghost', 'Rock', 'Ice', 'Dragon']" 
+            (click)="selectType(type)"
+            [class.active]="selectedType === type"
+            class="type-filter-btn"
+            [attr.data-type]="type.toLowerCase()">
+            {{ type }}
+          </button>
+        </div>
+
         <button 
           class="ai-coach-btn" 
           (click)="consultAiCoach()"
-          [disabled]="dbOffline">
+          [disabled]="dbOffline || teamUpdating || aiLoading">
           <i class="ai-icon">💡</i> Consult AI Coach
         </button>
       </div>
@@ -76,29 +112,6 @@
     <section class="explorer-section">
       <div class="explorer-header">
         <h3>Pokemon Database</h3>
-        
-        <!-- Search and Filters -->
-        <div class="search-bar-wrapper">
-          <input 
-            type="text" 
-            [(ngModel)]="searchQuery" 
-            (input)="onSearch()" 
-            placeholder="Search by name or number..." 
-            class="search-input" />
-          <i class="search-icon">🔍</i>
-        </div>
-      </div>
-
-      <!-- Quick Type Filter Badges -->
-      <div class="type-filters">
-        <button 
-          *ngFor="let type of ['Grass', 'Fire', 'Water', 'Electric', 'Psychic', 'Poison', 'Normal', 'Ghost', 'Rock', 'Ice', 'Dragon']" 
-          (click)="selectType(type)"
-          [class.active]="selectedType === type"
-          class="type-filter-btn"
-          [attr.data-type]="type.toLowerCase()">
-          {{ type }}
-        </button>
       </div>
 
       <!-- Pokemon Card Grid -->
@@ -123,7 +136,7 @@
             <button 
               class="add-btn" 
               (click)="addToTeam(pokemon)"
-              [disabled]="dbOffline">
+              [disabled]="dbOffline || teamUpdating">
               Add to Slot {{ selectedSlotIndex + 1 }}
             </button>
             <button class="details-btn" (click)="viewPokemonDetails(pokemon.id)">
@@ -142,7 +155,7 @@
 
   <!-- 3. AI Coach Drawer -->
   <div class="drawer-overlay" [class.open]="showAiCoach" (click)="closeAiCoach()"></div>
-  <div class="ai-coach-drawer" [class.open]="showAiCoach">
+  <div class="ai-coach-drawer" [class.open]="showAiCoach" [class.maximized]="isAiCoachMaximized">
     <div class="drawer-header">
       <div class="coach-avatar">
         <div class="avatar-eye left"></div>
@@ -152,6 +165,9 @@
         <h4>AI Team Coach</h4>
         <span class="coach-subtitle">Synergy & Battle Coordinator</span>
       </div>
+      <button class="maximize-drawer-btn" (click)="toggleMaximizeAiCoach()" [title]="isAiCoachMaximized ? 'Restore' : 'Maximize'">
+        {{ isAiCoachMaximized ? '🗗' : '🗖' }}
+      </button>
       <button class="close-drawer-btn" (click)="closeAiCoach()">×</button>
     </div>
 
@@ -321,7 +337,7 @@
             <button 
               class="add-from-modal-btn" 
               (click)="addToTeam(selectedPokemon); closeDetailsModal()"
-              [disabled]="dbOffline">
+              [disabled]="dbOffline || teamUpdating">
               Add to Team Slot {{ selectedSlotIndex + 1 }}
             </button>
           </div>
@@ -355,5 +371,23 @@
     (touchend)="stopScrollDown()">
     <span class="arrow-icon">↓</span>
   </button>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container">
+    @for (toast of toasts; track toast.id) {
+      <div class="toast toast-{{toast.type}}" (click)="dismissToast(toast.id)">
+        <span class="toast-icon">
+          @switch (toast.type) {
+            @case ('success') { ✓ }
+            @case ('error') { ✕ }
+            @case ('warning') { ⚠ }
+            @case ('info') { ℹ }
+          }
+        </span>
+        <span class="toast-message">{{ toast.message }}</span>
+        <button class="toast-close" (click)="dismissToast(toast.id)">×</button>
+      </div>
+    }
+  </div>
 
 </div>
