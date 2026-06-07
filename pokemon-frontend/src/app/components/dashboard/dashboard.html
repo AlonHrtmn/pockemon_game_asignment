@@ -57,7 +57,7 @@
 
           <div *ngIf="slot" class="filled-slot-content">
             <button class="release-btn" (click)="removeFromSlot(i, $event)" [disabled]="teamUpdating" title="Release Pokemon">×</button>
-            <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" (click)="viewPokemonDetails(slot.pokemonId, i); $event.stopPropagation()" />
+            <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" />
             <div class="slot-name" (click)="viewPokemonDetails(slot.pokemonId, i); $event.stopPropagation()">{{ slot.pokemonName }}</div>
             <div class="slot-badges">
               <span class="badge" [attr.data-type]="slot.type1">{{ slot.type1 }}</span>
