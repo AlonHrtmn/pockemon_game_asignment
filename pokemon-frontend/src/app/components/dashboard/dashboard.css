@@ -406,35 +406,37 @@
 .refresh-db-btn {
   background: transparent;
   border: none;
-  color: #a0aec0;
-  font-size: 1.4rem;
+  color: #3b82f6;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+  font-size: 1.6rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 10px;
   border-radius: 50%;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .refresh-db-btn:hover:not(:disabled) {
-  color: #ff5353;
-  background: rgba(255, 255, 255, 0.05);
-  transform: scale(1.1);
+  color: #00f0ff;
+  text-shadow: 0 0 12px #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+  transform: scale(1.15) rotate(180deg);
 }
 
 .refresh-db-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .refresh-icon {
   display: inline-block;
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
 }
 
 .refresh-icon.spinning {
-  animation: spin 1.5s linear infinite;
+  animation: spin 1.2s linear infinite;
 }
 
 .search-bar-wrapper {

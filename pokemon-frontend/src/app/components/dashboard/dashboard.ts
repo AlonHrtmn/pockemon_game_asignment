@@ -63,6 +63,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadPokemons(forceRefresh: boolean = false): void {
     if (forceRefresh) {
+      if (this.isRefreshing) {
+        return; // Synchronous guard to prevent duplicate rapid trigger clicks
+      }
       this.isRefreshing = true;
       this.searchQuery = '';
       this.selectedType = '';
