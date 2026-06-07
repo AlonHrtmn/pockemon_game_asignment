@@ -302,6 +302,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return; // Block concurrent detail loading clicks
     }
     this.openedFromTeamSlotIndex = slotIndex;
+    if (slotIndex !== null) {
+      this.selectedSlotIndex = slotIndex;
+    }
     this.detailsLoading = true;
     this.showDetailsModal = true;
     this.selectedPokemon = null; // Clear previous details immediately to prevent temporary stale rendering
