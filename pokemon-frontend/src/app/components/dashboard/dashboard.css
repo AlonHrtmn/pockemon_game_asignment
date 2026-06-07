@@ -397,6 +397,46 @@
   padding-left: 10px;
 }
 
+.database-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.refresh-db-btn {
+  background: transparent;
+  border: none;
+  color: #a0aec0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease-in-out;
+}
+
+.refresh-db-btn:hover:not(:disabled) {
+  color: #ff5353;
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.1);
+}
+
+.refresh-db-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.refresh-icon.spinning {
+  animation: spin 1.5s linear infinite;
+}
+
 .search-bar-wrapper {
   position: relative;
   width: calc((100% - 64px) / 5);

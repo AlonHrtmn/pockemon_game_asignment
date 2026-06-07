@@ -35,6 +35,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   detailsLoading = false;
   showDetailsModal = false;
   openedFromTeamSlotIndex: number | null = null;
+  isRefreshing = false;
 
   // DB Offline or API Down states
   dbOffline = false;
@@ -60,17 +61,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadTeam();
   }
 
-  loadPokemons(): void {
+  loadPokemons(forceRefresh: boolean = false): void {
+    if (forceRefresh) {
+      this.isRefreshing = true;
+      localStorage.removeItem('pokemon_list_cache');
+      localStorage.removeItem('pokemon_list_cache_time');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('pokemon_detail_')) {
+          localStorage.removeItem(key);
+        }
+      }
+      this.loadTeam();
+    }
+
     this.pokemonService.getCachedPokemons().subscribe({
       next: (data) => {
         this.pokemons = data;
         this.apiDown = false;
         this.applyFilters();
+        this.isRefreshing = false;
+        if (forceRefresh) {
+          this.showToast('Pokemon Database refreshed successfully.', 'success');
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.apiDown = true;
+        this.isRefreshing = false;
         console.error('Failed to load pokemons', err);
+        if (forceRefresh) {
+          this.showToast('Failed to refresh Pokemon Database.', 'error');
+        }
         this.cdr.markForCheck();
       }
     });

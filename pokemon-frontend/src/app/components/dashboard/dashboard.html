@@ -111,7 +111,17 @@
     <!-- 2. Pokemon Explorer Section -->
     <section class="explorer-section">
       <div class="explorer-header">
-        <h3>Pokemon Database</h3>
+        <div class="database-title-container">
+          <h3>Pokemon Database</h3>
+          <button 
+            type="button" 
+            class="refresh-db-btn" 
+            (click)="loadPokemons(true)" 
+            [disabled]="dbOffline || teamUpdating || isRefreshing"
+            title="Refresh Database Catalog">
+            <span class="refresh-icon" [class.spinning]="isRefreshing">🔄</span>
+          </button>
+        </div>
       </div>
 
       <!-- Pokemon Card Grid -->
