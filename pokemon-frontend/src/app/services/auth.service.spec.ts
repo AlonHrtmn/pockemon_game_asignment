@@ -15,7 +15,9 @@ describe('AuthService', () => {
         AuthService,
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([])
+        provideRouter([
+          { path: 'auth', component: class {} }
+        ])
       ]
     });
     service = TestBed.inject(AuthService);

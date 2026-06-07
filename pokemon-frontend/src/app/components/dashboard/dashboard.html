@@ -88,14 +88,30 @@
         </div>
 
         <!-- Quick Type Filter Badges -->
-        <div class="type-filters">
+        <div class="type-filters-wrapper">
           <button 
-            *ngFor="let type of ['Grass', 'Fire', 'Water', 'Electric', 'Psychic', 'Poison', 'Normal', 'Ghost', 'Rock', 'Ice', 'Dragon']" 
-            (click)="selectType(type)"
-            [class.active]="selectedType === type"
-            class="type-filter-btn"
-            [attr.data-type]="type.toLowerCase()">
-            {{ type }}
+            type="button" 
+            class="scroll-arrow-btn left" 
+            (click)="scrollFilters(-150)" 
+            title="Scroll Left">
+            ‹
+          </button>
+          <div class="type-filters" #typeFiltersContainer>
+            <button 
+              *ngFor="let type of ['Grass', 'Fire', 'Water', 'Electric', 'Psychic', 'Poison', 'Normal', 'Ghost', 'Rock', 'Ice', 'Dragon']" 
+              (click)="selectType(type)"
+              [class.active]="selectedType === type"
+              class="type-filter-btn"
+              [attr.data-type]="type.toLowerCase()">
+              {{ type }}
+            </button>
+          </div>
+          <button 
+            type="button" 
+            class="scroll-arrow-btn right" 
+            (click)="scrollFilters(150)" 
+            title="Scroll Right">
+            ›
           </button>
         </div>
 

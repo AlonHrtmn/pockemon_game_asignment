@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -14,6 +14,7 @@ import { PokemonService, PokemonListItem, PokemonDetails, DreamTeamMember, AiCoa
   styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  @ViewChild('typeFiltersContainer') typeFiltersContainer!: ElementRef;
   trainerName = '';
   pokemons: PokemonListItem[] = [];
   filteredPokemons: PokemonListItem[] = [];
@@ -144,6 +145,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     this.selectedType = this.selectedType === type ? '' : type;
     this.applyFilters();
+  }
+
+  scrollFilters(amount: number): void {
+    if (this.typeFiltersContainer) {
+      const el = this.typeFiltersContainer.nativeElement;
+      el.scrollBy({ left: amount, behavior: 'smooth' });
+    }
   }
 
   applyFilters(): void {
@@ -471,6 +479,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   showToast(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration: number = 4000): void {
+    this.toasts = []; // Ensure at most one toast is displayed at any given time
     const id = ++this.toastId;
     this.toasts.push({ message, type, id });
     setTimeout(() => this.dismissToast(id), duration);

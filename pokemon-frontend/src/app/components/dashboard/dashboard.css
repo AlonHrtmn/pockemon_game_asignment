@@ -329,6 +329,15 @@
   gap: 16px;
 }
 
+.type-filters-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
 .dock-actions .type-filters {
   display: flex;
   gap: 6px;
@@ -336,12 +345,40 @@
   padding-bottom: 0;
   overflow-x: auto;
   flex: 1;
-  justify-content: center;
+  scroll-behavior: smooth;
   scrollbar-width: none; /* Hide scrollbar for Firefox */
 }
 
 .dock-actions .type-filters::-webkit-scrollbar {
   display: none; /* Hide scrollbar for Chrome/Safari/Edge */
+}
+
+.scroll-arrow-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e0;
+  font-size: 1.25rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.scroll-arrow-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.scroll-arrow-btn:active {
+  transform: scale(0.92);
 }
 
 .ai-coach-btn {
