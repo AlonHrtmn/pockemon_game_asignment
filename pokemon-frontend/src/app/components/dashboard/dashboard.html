@@ -333,12 +333,20 @@
             </div>
           </div>
 
-          <div class="modal-actions" *ngIf="openedFromTeamSlotIndex === null">
+          <div class="modal-actions">
             <button 
+              *ngIf="openedFromTeamSlotIndex === null"
               class="add-from-modal-btn" 
               (click)="addToTeam(selectedPokemon); closeDetailsModal()"
               [disabled]="dbOffline || teamUpdating">
               Add to Team Slot {{ selectedSlotIndex + 1 }}
+            </button>
+            <button 
+              *ngIf="openedFromTeamSlotIndex !== null"
+              class="remove-from-modal-btn" 
+              (click)="removeFromSlotAndClose(openedFromTeamSlotIndex)"
+              [disabled]="dbOffline || teamUpdating">
+              Remove from Slot {{ openedFromTeamSlotIndex + 1 }}
             </button>
           </div>
         </div>

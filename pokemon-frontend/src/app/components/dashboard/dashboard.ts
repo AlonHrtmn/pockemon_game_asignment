@@ -297,6 +297,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  removeFromSlotAndClose(slotIndex: number): void {
+    if (this.teamUpdating) {
+      return;
+    }
+    this.removeFromSlot(slotIndex);
+    this.closeDetailsModal();
+  }
+
   viewPokemonDetails(pokemonId: number, slotIndex: number | null = null): void {
     if (this.detailsLoading) {
       return; // Block concurrent detail loading clicks
