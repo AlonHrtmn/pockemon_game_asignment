@@ -407,12 +407,12 @@
   background: transparent;
   border: none;
   color: #a0aec0;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 8px;
   border-radius: 50%;
   transition: all 0.2s ease-in-out;
 }

@@ -64,6 +64,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   loadPokemons(forceRefresh: boolean = false): void {
     if (forceRefresh) {
       this.isRefreshing = true;
+      this.searchQuery = '';
+      this.selectedType = '';
       localStorage.removeItem('pokemon_list_cache');
       localStorage.removeItem('pokemon_list_cache_time');
       for (let i = localStorage.length - 1; i >= 0; i--) {
