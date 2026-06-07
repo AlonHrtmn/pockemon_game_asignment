@@ -30,8 +30,11 @@ export class AuthComponent {
     }
   }
 
-  toggleMode(): void {
-    this.isLoginMode = !this.isLoginMode;
+  setMode(isLogin: boolean): void {
+    if (this.isLoginMode === isLogin) {
+      return;
+    }
+    this.isLoginMode = isLogin;
     this.errorMessage = '';
     this.successMessage = '';
     this.username = '';

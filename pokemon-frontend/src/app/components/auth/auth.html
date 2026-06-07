@@ -22,14 +22,14 @@
       <button 
         type="button" 
         [class.active]="isLoginMode" 
-        (click)="isLoginMode = true"
+        (click)="setMode(true)"
         [disabled]="isLoading">
         Login
       </button>
       <button 
         type="button" 
         [class.active]="!isLoginMode" 
-        (click)="isLoginMode = false"
+        (click)="setMode(false)"
         [disabled]="isLoading">
         Register
       </button>
