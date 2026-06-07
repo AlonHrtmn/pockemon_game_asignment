@@ -216,6 +216,7 @@
   object-fit: contain;
   filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.3));
   transition: transform 0.3s;
+  cursor: pointer;
 }
 
 .team-slot:hover .slot-sprite {
@@ -228,6 +229,13 @@
   margin-top: 8px;
   color: #fff;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: color 0.2s, text-decoration 0.2s;
+}
+
+.slot-name:hover {
+  color: #ff5353;
+  text-decoration: underline;
 }
 
 .slot-badges {
@@ -1247,6 +1255,32 @@
 }
 
 .add-from-modal-btn:disabled {
+  background: #2d3748;
+  color: #718096;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.remove-from-modal-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  padding: 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);
+  transition: all 0.3s;
+}
+
+.remove-from-modal-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px rgba(239, 68, 68, 0.35);
+}
+
+.remove-from-modal-btn:disabled {
   background: #2d3748;
   color: #718096;
   box-shadow: none;

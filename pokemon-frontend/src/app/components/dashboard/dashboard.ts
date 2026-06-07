@@ -34,6 +34,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedPokemon: PokemonDetails | null = null;
   detailsLoading = false;
   showDetailsModal = false;
+  openedFromTeamSlotIndex: number | null = null;
 
   // DB Offline or API Down states
   dbOffline = false;
@@ -229,8 +230,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  removeFromSlot(slotIndex: number, event: MouseEvent): void {
-    event.stopPropagation(); // Prevent selecting the slot on remove button click
+  removeFromSlot(slotIndex: number, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation(); // Prevent selecting the slot on remove button click
+    }
     if (this.dbOffline) {
       this.showToast('Database is offline. Changes cannot be saved right now.', 'warning');
       return;
@@ -294,10 +297,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewPokemonDetails(pokemonId: number): void {
+  viewPokemonDetails(pokemonId: number, slotIndex: number | null = null): void {
     if (this.detailsLoading) {
       return; // Block concurrent detail loading clicks
     }
+    this.openedFromTeamSlotIndex = slotIndex;
     this.detailsLoading = true;
     this.showDetailsModal = true;
     this.selectedPokemon = null; // Clear previous details immediately to prevent temporary stale rendering
@@ -325,6 +329,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showDetailsModal = false;
     this.selectedPokemon = null;
     this.detailsLoading = false;
+    this.openedFromTeamSlotIndex = null;
     if (this.detailsSubscription) {
       this.detailsSubscription.unsubscribe();
       this.detailsSubscription = null;

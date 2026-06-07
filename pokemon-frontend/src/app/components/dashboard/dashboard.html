@@ -57,8 +57,8 @@
 
           <div *ngIf="slot" class="filled-slot-content">
             <button class="release-btn" (click)="removeFromSlot(i, $event)" [disabled]="teamUpdating" title="Release Pokemon">×</button>
-            <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" />
-            <div class="slot-name">{{ slot.pokemonName }}</div>
+            <img [src]="slot.spriteUrl" [alt]="slot.pokemonName" class="slot-sprite" (click)="viewPokemonDetails(slot.pokemonId, i); $event.stopPropagation()" />
+            <div class="slot-name" (click)="viewPokemonDetails(slot.pokemonId, i); $event.stopPropagation()">{{ slot.pokemonName }}</div>
             <div class="slot-badges">
               <span class="badge" [attr.data-type]="slot.type1">{{ slot.type1 }}</span>
               <span class="badge" *ngIf="slot.type2" [attr.data-type]="slot.type2">{{ slot.type2 }}</span>
@@ -335,10 +335,18 @@
 
           <div class="modal-actions">
             <button 
+              *ngIf="openedFromTeamSlotIndex === null"
               class="add-from-modal-btn" 
               (click)="addToTeam(selectedPokemon); closeDetailsModal()"
               [disabled]="dbOffline || teamUpdating">
               Add to Team Slot {{ selectedSlotIndex + 1 }}
+            </button>
+            <button 
+              *ngIf="openedFromTeamSlotIndex !== null"
+              class="remove-from-modal-btn" 
+              (click)="removeFromSlot(openedFromTeamSlotIndex); closeDetailsModal()"
+              [disabled]="dbOffline || teamUpdating">
+              Remove from Slot {{ openedFromTeamSlotIndex + 1 }}
             </button>
           </div>
         </div>
