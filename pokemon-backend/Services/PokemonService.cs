@@ -89,6 +89,14 @@ namespace pokemon_backend.Services
             {
                 _logger.LogInformation("Database Pokemon Cache is empty. Seeding catalog...");
 
+                // Clear existing cache items to prevent duplicate key collisions
+                var existingItems = await _context.PokemonCache.ToListAsync();
+                if (existingItems.Any())
+                {
+                    _context.PokemonCache.RemoveRange(existingItems);
+                    await _context.SaveChangesAsync();
+                }
+
                 List<(int id, string name)> catalog = new();
 
                 // Try fetching catalog list from PokeAPI
@@ -169,7 +177,7 @@ namespace pokemon_backend.Services
                 _logger.LogError(ex, "Failed to check database count.");
             }
 
-            if (dbCount == 0)
+            if (dbCount < 1025)
             {
                 await SeedDatabaseCacheAsync();
             }
