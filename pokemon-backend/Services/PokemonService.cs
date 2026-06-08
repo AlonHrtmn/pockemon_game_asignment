@@ -94,7 +94,7 @@ namespace pokemon_backend.Services
                 // Try fetching catalog list from PokeAPI
                 try
                 {
-                    var response = await _httpClient.GetAsync("https://pokeapi.co/api/v2/pokemon?limit=151");
+                    var response = await _httpClient.GetAsync("https://pokeapi.co/api/v2/pokemon?limit=1025");
                     if (response.IsSuccessStatusCode)
                     {
                         var data = await response.Content.ReadFromJsonAsync<PokeApiListResponse>();
@@ -243,7 +243,7 @@ namespace pokemon_backend.Services
 
         public async Task<PokemonDetailsDto?> GetPokemonDetailsAsync(int id)
         {
-            if (id < 1 || id > 151)
+            if (id < 1 || id > 1025)
             {
                 return null;
             }
